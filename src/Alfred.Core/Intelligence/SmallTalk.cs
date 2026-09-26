@@ -40,8 +40,7 @@ public static class SmallTalk
         Add("All running smoothly. What can I do for you?", "how are you", "how are you doing", "how s it going", "how are things", "you ok", "are you ok");
         Add("You're welcome.", "thanks", "thank you", "thanks a lot", "thank you so much", "cheers", "much appreciated");
         Add("I'm Alfred, the assistant on your PC.", "who are you", "what s your name", "what is your name");
-        // Grows with the tool set; W0 has only these.
-        Add("I can open apps and websites, and search the web.", "what can you do", "help", "what can i ask you", "what do you do");
+        Add("I can open apps, websites and files, search the web and YouTube, control Spotify, change the volume and brightness, set timers, alarms and reminders, and check the weather and your calendar.", "what can you do", "help", "what can i ask you", "what do you do");
         return table;
     }
 }

@@ -27,7 +27,7 @@ if (transcripts.Count == 0)
 
 ILanguageModel model = modelPath is null ? new NoModel() : await LoadAsync(modelPath, gpuLayers);
 var launcher = new RecordingLauncher();
-var tools = ToolRegistry.Standard(new SampleCatalog(), launcher).EnabledTools();
+var tools = ToolRegistry.Standard(DryRun.Services(launcher)).EnabledTools();
 var engine = new LocalModelEngine(model);
 var modelTimes = new List<double>();
 
@@ -53,7 +53,7 @@ foreach (var raw in transcripts)
         Console.WriteLine($"{line}\n    {source,-6} {ms,6:0} ms  {steps}{routed}");
         // What would happen after each tool's grounding, with nothing started.
         launcher.Launched.Clear();
-        var outcome = await PlanRunner.RunAsync(plan, CancellationToken.None);
+        var outcome = plan.Steps.Count == 0 ? new PlanOutcome([], null) : await PlanRunner.RunAsync(plan, CancellationToken.None);
         var did = string.Join("; ", launcher.Launched.Concat(outcome.Failure is null ? [] : [$"✗ {outcome.Failure}"]));
         if (did.Length > 0) Console.WriteLine($"    would  {did}");
     }
@@ -118,5 +118,91 @@ sealed class RecordingLauncher : ILauncher
     {
         Launched.Add(browser is null ? $"open {url}" : $"open {url} in {browser.Name}");
         return Task.CompletedTask;
+    }
+}
+
+/// <summary>Stand-ins for everything a tool touches: nothing starts, nothing goes online.</summary>
+static class DryRun
+{
+    public static AlfredServices Services(RecordingLauncher launcher)
+    {
+        var settings = new SettingsStore(null);
+        var clock = new ClockStore(null);
+        var roots = new[] { Path.Combine(Path.GetTempPath(), "alfred-dry-run") };
+        var organizer = new FileOrganizer(() => roots, new FileJournal(Path.Combine(roots[0], "journal.json")), new NoBin());
+        return new AlfredServices
+        {
+            Settings = settings, Clock = clock, Apps = new SampleCatalog(), Launcher = launcher, System = new NoSystem(),
+            Media = new NoMedia(), Spotify = new SpotifyWebApi(settings, new MemorySecretStore(), launcher), Clipboard = new NoClipboard(),
+            Windows = new NoWindows(), Files = new FileServices(() => roots, new DirectoryFileSearch(), organizer, _ => Task.CompletedTask),
+            Places = new NoPlaces(), CalendarSource = new NoCalendar(), Reminders = new NoReminders(),
+            Notes = new NoteBook(Path.Combine(roots[0], "notes"), () => DateTime.Now),
+        };
+    }
+
+    sealed class NoSystem : ISystemControl
+    {
+        public float Volume() => 0.5f;
+        public float SetVolume(float volume) => Math.Clamp(volume, 0, 1);
+        public void SetMuted(bool muted) { }
+        public int Brightness() => 50;
+        public void SetBrightness(int percent) { }
+        public void Lock() { }
+        public void Sleep() { }
+        public void OpenNotificationSettings() { }
+    }
+
+    sealed class NoMedia : IMediaControl
+    {
+        public bool IsSpotifyInstalled => true;
+        public bool IsSpotifyRunning => true;
+        public Task LaunchSpotifyAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<PlaybackState> StateAsync() => Task.FromResult(PlaybackState.Playing);
+        public Task PlayAsync() => Task.CompletedTask;
+        public Task PauseAsync() => Task.CompletedTask;
+        public Task NextAsync() => Task.CompletedTask;
+        public Task PreviousAsync() => Task.CompletedTask;
+        public void SetSpotifyVolume(int percent) { }
+        public Task OpenUriAsync(string uri, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    sealed class NoClipboard : IClipboard
+    {
+        public ClipboardContent Read() => new("(clipboard)", [], false, false);
+        public void Clear() { }
+        public bool MakePlainText() => true;
+        public void Paste() { }
+    }
+
+    sealed class NoWindows : IWindowManager
+    {
+        public IReadOnlyList<string> RunningApps() => ["Google Chrome", "Visual Studio Code", "Spotify"];
+        public string Arrange(string? app, WindowAction action) => app ?? "Window";
+    }
+
+    sealed class NoBin : IRecycleBin
+    {
+        public string Recycle(string path) => path;
+        public void Restore(string inBin, string original) { }
+        public bool Contains(string path) => false;
+    }
+
+    sealed class NoPlaces : IPlaceFinder
+    {
+        public Task<Place> LocateAsync(string name, CancellationToken cancellationToken) => Task.FromResult(new Place(name, 0, 0, "UTC"));
+        public Task<Forecast> ForecastAsync(Place place, bool fahrenheit, CancellationToken cancellationToken) =>
+            Task.FromResult(new Forecast(20, "clear", [22, 21], [12, 11], ["clear", "clear"], [0, 0]));
+    }
+
+    sealed class NoCalendar : ICalendarSource
+    {
+        public Task<IReadOnlyList<CalendarEvent>> EventsAsync(DateTime start, DateTime end, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<CalendarEvent>>([]);
+    }
+
+    sealed class NoReminders : IReminderSink
+    {
+        public string Name => "Alfred";
+        public Task AddAsync(string title, SpokenWhen? when, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

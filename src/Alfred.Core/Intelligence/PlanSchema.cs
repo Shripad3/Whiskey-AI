@@ -37,6 +37,7 @@ public static class PlanSchema
         }
         gbnf.AppendLine("string ::= \"\\\"\" char* \"\\\"\"");
         gbnf.AppendLine("char ::= [^\"\\\\\\x00-\\x1F\\x7F] | \"\\\\\" ([\"\\\\/bfnrt] | \"u\" [0-9a-fA-F]{4})");
+        gbnf.AppendLine("digits ::= \"\\\"\" [0-9] [0-9]? [0-9]? \"\\\"\"");
         gbnf.AppendLine("ws ::= \" \"?");
         return gbnf.ToString();
     }
@@ -47,7 +48,7 @@ public static class PlanSchema
     {
         var value = argument.Choices is { Count: > 0 } choices
             ? "(" + string.Join(" | ", choices.Select(c => Literal(Quote(c)))) + ")"
-            : "string";
+            : argument.Digits ? "digits" : "string";
         return argument.Required ? value : $"({value} | \"null\")";
     }
 
@@ -76,7 +77,7 @@ public static class PlanSchema
             text.AppendLine($"- {tool.Name}: {tool.Description}");
             foreach (var argument in tool.Arguments)
             {
-                var kind = argument.Choices is { Count: > 0 } choices ? "one of " + string.Join(", ", choices) : "string";
+                var kind = argument.Choices is { Count: > 0 } choices ? "one of " + string.Join(", ", choices) : argument.Digits ? "number" : "string";
                 text.AppendLine($"    {argument.Name} ({kind}{(argument.Required ? "" : ", or null if not said")}): {argument.Description}");
             }
         }
@@ -124,6 +125,7 @@ public static class PlanSchema
             }
             if (node.GetValueKind() != JsonValueKind.String) throw new AssistantFailure("The model couldn't make sense of that");
             var value = node.GetValue<string>();
+            if (spec.Digits && !int.TryParse(value, out _)) throw new AssistantFailure("The model couldn't make sense of that");
             if (spec.Choices is { Count: > 0 } choices && !choices.Contains(value))
                 throw new AssistantFailure("The model couldn't make sense of that");
             clean[spec.Name] = value;

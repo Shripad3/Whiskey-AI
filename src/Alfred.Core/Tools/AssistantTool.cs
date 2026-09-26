@@ -5,10 +5,11 @@ using System.Text.Json.Serialization;
 namespace Alfred.Core;
 
 /// <summary>
-/// One argument as the model sees it. Every argument is a string; an optional
-/// one may be null. <paramref name="Choices"/> limits it to fixed values.
+/// One argument as the model sees it. Every argument is a JSON string; an
+/// optional one may be null. <paramref name="Choices"/> limits it to fixed
+/// values, and <paramref name="Digits"/> to a whole number of up to three digits.
 /// </summary>
-public sealed record ArgumentSpec(string Name, string Description, bool Required = true, IReadOnlyList<string>? Choices = null);
+public sealed record ArgumentSpec(string Name, string Description, bool Required = true, IReadOnlyList<string>? Choices = null, bool Digits = false);
 
 /// <summary>What the running tool knows about the command it serves.</summary>
 /// <param name="Transcript">
@@ -18,9 +19,23 @@ public sealed record ArgumentSpec(string Name, string Description, bool Required
 /// <param name="IsFinalStep">False for steps followed by others.</param>
 public sealed record ToolContext(string? Transcript, bool IsFinalStep = true);
 
-/// <summary>What a tool reports: a one-line outcome.</summary>
+/// <summary>
+/// A row in a result list, such as a found file. <paramref name="Id"/> is an
+/// opaque token: the UI never holds a path, and selecting a row goes back
+/// through the coordinator, which validates again before acting.
+/// </summary>
+public sealed record ResultItem(string Id, string Title, string Detail, string Symbol);
+
+/// <summary>What a tool reports: a one-line outcome, and optionally items to choose from.</summary>
+/// <param name="IsAnswer">An answer to a question (the weather): shown and spoken as a reply.</param>
 public sealed record ToolResult(string Text, bool IsAnswer = false)
 {
+    public IReadOnlyList<ResultItem> Items { get; init; } = [];
+    /// <summary>Set when the change waits for the user's yes (a batch of files).</summary>
+    public string? Confirmation { get; init; }
+    /// <summary>A file change that "undo" can reverse; its result stays up longer.</summary>
+    public bool Undoable { get; init; }
+
     public static implicit operator ToolResult(string text) => new(text);
 }
 
@@ -63,6 +78,8 @@ public abstract class AssistantTool<TArguments> : IAssistantTool where TArgument
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        // Numbers reach tools as quoted digits from the model's grammar.
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
     };
 
     public abstract string Name { get; }
@@ -108,11 +125,33 @@ public sealed class ToolRegistry(IReadOnlyList<IAssistantTool> tools, Func<strin
     public IReadOnlyList<IAssistantTool> EnabledTools() =>
         Tools.Where(t => isEnabled?.Invoke(t.Name) ?? true).ToList();
 
-    /// <summary>The W0 tool set, in tie-breaking order for direct matching.</summary>
-    public static ToolRegistry Standard(IAppCatalog apps, ILauncher launcher, Func<SearchEngine>? searchEngine = null, Func<string, bool>? isEnabled = null) =>
+    /// <summary>Every tool, in tie-breaking order for direct matching.</summary>
+    public static ToolRegistry Standard(AlfredServices services, Func<string, bool>? isEnabled = null) =>
         new([
-            new OpenAppTool(apps, launcher),
-            new OpenUrlTool(apps, launcher),
-            new WebSearchTool(launcher, searchEngine ?? (() => SearchEngine.Google)),
-        ], isEnabled);
+            // First: their phrasings are specific, and "stop the timer" or
+            // "start a stopwatch" must not reach Spotify or app launching.
+            new TimerTool(services.Clock),
+            new AlarmTool(services.Clock),
+            new StopwatchTool(services.Clock),
+            new ReminderTool(services.Clock, services.Reminders),
+            new CurrentTimeTool(services.Places),
+            new CalendarTool(services.CalendarSource),
+            new OpenAppTool(services.Apps, services.Launcher),
+            new OpenUrlTool(services.Apps, services.Launcher),
+            // Before Spotify and files: "play … on YouTube" and "… video" are its.
+            new PlayYouTubeTool(services.Apps, services.Launcher),
+            // Before webSearch: "how's the weather" is answered, not searched.
+            new WeatherTool(services.Places, services.Settings),
+            new WebSearchTool(services.Launcher, () => services.Settings.Current.SearchEngine),
+            new ControlSpotifyTool(services.Media, services.Spotify),
+            new SystemControlTool(services.System),
+            new WindowTool(services.Windows),
+            new ClipboardTool(services.Clipboard),
+            new NoteTool(services.Notes),
+            // After openApp and openURL: "open spotify" must stay an app.
+            new OpenFileTool(services.Files),
+            new FindFilesTool(services.Files),
+            new OrganiseFilesTool(services.Files),
+            new UndoFileChangeTool(services.Files),
+        ], isEnabled ?? (name => services.Settings.Current.IsEnabled(name)));
 }

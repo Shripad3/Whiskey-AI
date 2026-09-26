@@ -30,6 +30,8 @@ public sealed record Plan(IReadOnlyList<PlannedStep> Steps)
     public string? ModelOutput { get; init; }
     /// <summary>The tools the model was shown, when it was asked.</summary>
     public IReadOnlyList<string>? Routed { get; init; }
+    /// <summary>A routine: every step runs even if one fails, and its closing line is spoken at the end.</summary>
+    public RoutineRun? Routine { get; init; }
 }
 
 /// <summary>A failure the user sees, optionally pointing at the Settings page that fixes it.</summary>

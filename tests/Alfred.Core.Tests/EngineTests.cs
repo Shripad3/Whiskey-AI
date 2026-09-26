@@ -78,7 +78,8 @@ public class PlanSchemaTests
     [Fact]
     public void DisabledToolIsNotRegistered()
     {
-        var registry = ToolRegistry.Standard(new FakeCatalog(), new FakeLauncher(), isEnabled: name => name != "openURL");
+        using var world = new World();
+        var registry = ToolRegistry.Standard(world.Services, isEnabled: name => name != "openURL");
         Assert.DoesNotContain("openURL", registry.EnabledTools().Select(t => t.Name));
         Assert.Equal(registry.Tools.Count - 1, registry.EnabledTools().Count);
     }
