@@ -1,0 +1,32 @@
+# Intent corpus (spec §12), the Mac's Tests/Fixtures/intents.txt with Windows app names.
+# Run: dotnet run --project src/Alfred.PlanCli -- --model <gguf> < shared/fixtures/intents.txt
+# Groups are headed by the expected tool sequence.
+
+# openApp
+open spotify
+launch visual studio code
+open the notepad app
+open my browser
+
+# openURL
+open youtube
+go to github.com
+open youtube in chrome
+
+# webSearch
+search for porsche 911 prices
+look up the mat armstrong channel
+
+# compound
+Open Chrome and go to the Mat Armstrong YouTube channel
+open spotify and then open gmail
+
+# no tool fits → empty steps (a weather question may reasonably become webSearch)
+what's the weather like
+delete everything in my downloads folder
+run rm -rf in the terminal
+
+# model path: phrasings direct matching leaves alone
+could you bring up discord for me
+i want to watch something on netflix
+find out who won the f1 race yesterday

@@ -1,0 +1,24 @@
+{
+  "_source": "Mac: Tests/NotchAssistantCoreTests/WebAddressTests.swift, WebSearchTests.swift, DirectMatchTests.spokenDomains",
+  "accepts": [
+    { "raw": "youtube.com", "expected": "https://youtube.com" },
+    { "raw": "https://www.youtube.com", "expected": "https://www.youtube.com" },
+    { "raw": "http://example.com/path?q=1", "expected": "http://example.com/path?q=1" },
+    { "raw": "  github.com  ", "expected": "https://github.com" }
+  ],
+  "rejects": ["file:///etc/passwd", "javascript:alert(1)", "spotify:track:123", "ftp://example.com",
+              "youtube", "you tube.com", "", "https://", "https://.com", "x-apple.systempreferences:com.apple",
+              "shell:AppsFolder\\Microsoft.WindowsCalculator_8wekyb3d8bbwe!App", "ms-settings:display", "C:\\Windows\\System32\\cmd.exe"],
+  "spokenDomains": [
+    { "words": "github com", "expected": "https://github.com" },
+    { "words": "github dot com", "expected": "https://github.com" },
+    { "words": "best comics", "expected": null },
+    { "words": "github com apple", "expected": null }
+  ],
+  "searchUrls": [
+    { "engine": "Google", "query": "Mat Armstrong 911", "expected": "https://www.google.com/search?q=Mat%20Armstrong%20911" },
+    { "engine": "DuckDuckGo", "query": "a&b=c", "expected": "https://duckduckgo.com/?q=a%26b%3Dc" },
+    { "engine": "Bing", "query": " rust ", "expected": "https://www.bing.com/search?q=rust" },
+    { "engine": "Google", "query": "   ", "expected": null }
+  ]
+}

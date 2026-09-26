@@ -1,0 +1,18 @@
+{
+  "_source": "Mac: Tests/NotchAssistantCoreTests/DirectMatcherTests.swift (DirectCommandTests)",
+  "splits": [
+    { "transcript": "Open YouTube", "verb": "open", "rest": "youtube" },
+    { "transcript": "please open spotify", "verb": "open", "rest": "spotify" },
+    { "transcript": "Go to github.com", "verb": "go to", "rest": "github com" },
+    { "transcript": "search for porsche 911 prices", "verb": "search for", "rest": "porsche 911 prices" },
+    { "transcript": "Search porsche", "verb": "search", "rest": "porsche" },
+    { "transcript": "Look up the weather please", "verb": "look up", "rest": "the weather" },
+    { "transcript": "Mute.", "verb": "", "rest": "mute" }
+  ],
+  "empty": ["  . ", ""],
+  "compound": {
+    "yes": ["open spotify and then open gmail", "open chrome and play the mat armstrong youtube video", "mute then lock"],
+    "no": ["set a timer for an hour and a half", "set a timer for 1 hour and 30 minutes",
+           "wake me up every monday and wednesday at 7", "remind me to buy bread and milk"]
+  }
+}

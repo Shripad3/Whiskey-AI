@@ -1,0 +1,24 @@
+{
+  "_source": "Mac: Tests/NotchAssistantCoreTests/GroundingTests.swift",
+  "mentions": [
+    { "phrase": "Arc", "transcript": "open youtube in arc", "expected": true },
+    { "phrase": "arc", "transcript": "search for porsche prices", "expected": false },
+    { "phrase": "Safari", "transcript": "open youtube", "expected": false },
+    { "phrase": "Visual Studio Code", "transcript": "open visual studio code please", "expected": true },
+    { "phrase": "Google Chrome", "transcript": "open github in chrome", "expected": false },
+    { "phrase": "", "transcript": "anything", "expected": false }
+  ],
+  "spokenUrls": [
+    { "url": "https://www.youtube.com", "transcript": "open youtube", "expected": true },
+    { "url": "https://www.youtube.com/", "transcript": "open youtube", "expected": true },
+    { "url": "https://www.youtube.com/watch?v=_Q-V-Q-V-0g", "transcript": "open arc and play the mat armstrong youtube video", "expected": false },
+    { "url": "https://github.com/apple", "transcript": "go to github.com/apple", "expected": true },
+    { "url": "https://github.com/apple", "transcript": "go to github", "expected": false }
+  ],
+  "clean": [
+    { "raw": "Open YouTube.", "expected": "Open YouTube" },
+    { "raw": "  open spotify!  ", "expected": "open spotify" },
+    { "raw": "Go to github.com.", "expected": "Go to github.com" },
+    { "raw": "Search for \"banana bread\"?", "expected": "Search for \"banana bread" }
+  ]
+}
