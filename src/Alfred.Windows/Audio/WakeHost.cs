@@ -8,7 +8,7 @@ namespace Alfred.Windows.Audio;
 /// Runs the wake word when the user has it on and the power profile allows
 /// (spec §9): microphone open, Silero VAD on every frame, Whisper tiny.en on
 /// the CPU for each speech segment. Listens only while the pill is idle,
-/// showing a confirmation, or ringing, where "Alfred, …" is an answer.
+/// showing a confirmation, or ringing, where "Whiskey, …" is an answer.
 /// </summary>
 internal sealed class WakeHost : IDisposable
 {
@@ -52,9 +52,9 @@ internal sealed class WakeHost : IDisposable
             else if (_coordinator.IsSuspended) status = "Paused";
             else if (!_power.Profile.AllowsWakeWord(settings.WakeWordOnBattery)) status = $"Paused: {_power.Profile.PauseReason()}";
             else if (!File.Exists(vad) || !File.Exists(tiny)) status = "Needs the wake word models (Settings › Model)";
-            else status = "Listening for “Alfred”";
+            else status = $"Listening for “{WakePhrase.DisplayName}”";
 
-            var shouldRun = status == "Listening for “Alfred”";
+            var shouldRun = status == $"Listening for “{WakePhrase.DisplayName}”";
             if (shouldRun && _listener is null) Start(vad, tiny, ref status);
             else if (!shouldRun && _listener is not null) StopListening();
             if (Status != status)

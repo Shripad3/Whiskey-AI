@@ -443,9 +443,11 @@ public class AlarmSettingsTests
     {
         using var store = new ClockStore(null);
         var rung = 0;
-        store.Start(null, _ => { }, _ => rung++);
+        // Switched off before the store starts ringing: once started, its own
+        // timer could ring the overdue alarm before the test switches it off.
         var alarm = store.AddAlarm(DateTime.Now.AddSeconds(-1), null);
         store.SetEnabled(alarm.Id, false);
+        store.Start(null, _ => { }, _ => rung++);
         store.FireDue();
         Assert.Equal(0, rung);
         Assert.False(Assert.Single(store.Snapshot.Alarms).IsEnabled);

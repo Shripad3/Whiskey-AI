@@ -20,7 +20,7 @@ internal sealed record ModelFile(string Name, string File, string Url, string Sh
         new("Whisper base.en", "ggml-base.en.bin", "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin",
             "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002", 147_964_211, "Speech to text on battery"),
         new("Whisper tiny.en", "ggml-tiny.en.bin", "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin",
-            "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f", 77_704_715, "Listens for “Alfred”"),
+            "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f", 77_704_715, $"Listens for “{WakePhrase.DisplayName}”"),
         new("Silero VAD v5.1.2", "silero_vad.onnx", "https://github.com/snakers4/silero-vad/raw/v5.1.2/src/silero_vad/data/silero_vad.onnx",
             "2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f", 2_327_524, "Hears when you start and stop talking"),
     ];

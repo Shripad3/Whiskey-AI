@@ -529,39 +529,62 @@ public class RoutineTests : IDisposable
 public class WakePhraseTests
 {
     [Theory]
-    [InlineData("Alfred open Spotify", "open Spotify")]
-    [InlineData("Hey Alfred, play some music", "play some music")]
-    [InlineData("Okay Alfredo what's the weather", "what's the weather")]
-    [InlineData("Al fred open YouTube", "open YouTube")]
-    [InlineData("Good morning Alfred", "Good morning Alfred")]
-    [InlineData("Alfred", "Alfred")]
+    [InlineData("Whiskey open Spotify", "open Spotify")]
+    [InlineData("Hey Whiskey, play some music", "play some music")]
+    [InlineData("Okay Whisky what's the weather", "what's the weather")]
+    [InlineData("Whis key open YouTube", "open YouTube")]
+    [InlineData("Good morning Whiskey", "Good morning Whiskey")]
+    [InlineData("Whiskey", "Whiskey")]
     public void StripsTheWakeWord(string transcript, string command) => Assert.Equal(command, WakePhrase.Command(transcript));
 
     [Theory]
     [InlineData("open Spotify")]
-    [InlineData("all friends are here")]
+    [InlineData("that was a risky move")]
     [InlineData("he offered me coffee")]
     [InlineData("")]
     public void RejectsFalseDetections(string transcript) => Assert.Null(WakePhrase.Command(transcript));
 
-    [Fact]
-    public void WakeWordMustComeEarly()
+    /// <summary>Close enough in spelling to pass the similarity test, but real words that must never wake it.</summary>
+    [Theory]
+    [InlineData("can you whisper it to me")]
+    [InlineData("whisk the eggs for a minute")]
+    [InlineData("he whisked her away")]
+    [InlineData("the cat's whiskers are long")]
+    [InlineData("buy some Whiskas for the cat")]
+    [InlineData("a husky and a frisky puppy")]
+    [InlineData("Whisk V eggs for about a minute.")]
+    public void LookalikeWordsNeverWake(string text)
     {
-        Assert.Null(WakePhrase.Command("one two three four five six seven eight nine ten eleven Alfred"));
-        Assert.Equal("open notes", WakePhrase.Command("one two three four five six Alfred open notes"));
+        Assert.False(WakePhrase.Contains(text));
+        Assert.Null(WakePhrase.Command(text));
     }
 
     [Theory]
-    [InlineData("Okay, Alfred.")]
-    [InlineData("K. Alfred, play some music.")]
-    [InlineData("Good morning, Alfred.")]
-    [InlineData("so anyway hey alfred open spotify")]
+    [InlineData("whiskey")]
+    [InlineData("whisky")]
+    [InlineData("wiskey")]
+    [InlineData("whiskeys")]
+    [InlineData("wispy")]
+    public void MishearingsWake(string key) => Assert.True(WakePhrase.IsWakeWord(key));
+
+    [Fact]
+    public void WakeWordMustComeEarly()
+    {
+        Assert.Null(WakePhrase.Command("one two three four five six seven eight nine ten eleven Whiskey"));
+        Assert.Equal("open notes", WakePhrase.Command("one two three four five six Whiskey open notes"));
+    }
+
+    [Theory]
+    [InlineData("Okay, Whiskey.")]
+    [InlineData("K. Whiskey, play some music.")]
+    [InlineData("Good morning, Whiskey.")]
+    [InlineData("so anyway hey whiskey open spotify")]
     public void Finds(string text) => Assert.True(WakePhrase.Contains(text));
 
     [Theory]
     [InlineData("He offered me a coffee this afternoon.")]
     [InlineData("How are you?")]
-    [InlineData("all friends are here")]
+    [InlineData("Alfred, open Spotify")]
     [InlineData("")]
     public void Ignores(string text) => Assert.False(WakePhrase.Contains(text));
 
@@ -569,10 +592,17 @@ public class WakePhraseTests
     [InlineData("I said open Petnet properties.PDF", "open Petnet properties.PDF")]
     [InlineData("Hi friend open process mini tutorial.PDF", "open process mini tutorial.PDF")]
     [InlineData("Play Matt Armstrong's latest video on YouTube", "Play Matt Armstrong's latest video on YouTube")]
-    [InlineData("Alfred play some music", "play some music")]
-    [InlineData("Hey Alfred, turn on DND", "turn on DND")]
+    [InlineData("Whiskey play some music", "play some music")]
+    [InlineData("Hey Whiskey, turn on DND", "turn on DND")]
     [InlineData("Good morning", "Good morning")]
     public void TidiesConfirmedWakes(string transcript, string command) => Assert.Equal(command, WakePhrase.CommandAfterConfirmedWake(transcript));
+
+    [Fact]
+    public void AddressedByNameInSmallTalk()
+    {
+        Assert.Equal("Yes? What can I do for you?", SmallTalk.Reply("Whiskey"));
+        Assert.NotNull(SmallTalk.Reply("hello Whiskey"));
+    }
 
     [Fact]
     public void EndpointerEndsAfterTrailingSilence()

@@ -11,7 +11,7 @@ public static class SmallTalk
     public static string? Reply(string transcript)
     {
         var text = SpokenText.Normalize(transcript);
-        const string name = "alfred";
+        const string name = WakePhrase.Name;
         if (text.StartsWith(name + " ", StringComparison.Ordinal)) text = text[(name.Length + 1)..];
         if (text.EndsWith(" " + name, StringComparison.Ordinal)) text = text[..^(name.Length + 1)];
         if (text == name) return "Yes? What can I do for you?";

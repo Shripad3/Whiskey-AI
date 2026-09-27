@@ -53,7 +53,7 @@ public static class StateMachine
     {
         (AssistantState.Idle, AssistantEvent.Activation) => new AssistantState.Listening(""),
         (AssistantState.Idle, AssistantEvent.Ring r) => new AssistantState.Alert(r.Clock),
-        // "Alfred, stop" / "Alfred, snooze": the sound stops as soon as the user speaks.
+        // "Whiskey, stop" / "Whiskey, snooze": the sound stops as soon as the user speaks.
         (AssistantState.Alert, AssistantEvent.Activation) => new AssistantState.Listening(""),
         (AssistantState.Listening, AssistantEvent.Partial p) => new AssistantState.Listening(p.Text),
         (AssistantState.Listening, AssistantEvent.Endpoint p) => new AssistantState.Thinking(p.Transcript),
@@ -64,7 +64,7 @@ public static class StateMachine
         (AssistantState.Acting, AssistantEvent.Answer a) => new AssistantState.Reply(a.Text),
         (AssistantState.Acting, AssistantEvent.NeedsConfirmation c) => new AssistantState.Confirm(c.Text, c.Items),
         (AssistantState.List or AssistantState.Confirm, AssistantEvent.Selected s) => new AssistantState.Result(s.Text),
-        // Answering by voice: "Alfred, yes".
+        // Answering by voice: "Whiskey, yes".
         (AssistantState.Confirm, AssistantEvent.Activation) => new AssistantState.Listening(""),
         (AssistantState.Idle or AssistantState.Listening or AssistantState.Thinking or AssistantState.Acting or AssistantState.List
             or AssistantState.Confirm, AssistantEvent.Failure f) => new AssistantState.Error(f.Message, f.SettingsPage),

@@ -9,7 +9,7 @@ public sealed record WakeDetection(string Transcript, float[] Audio, double Trai
 
 /// <summary>
 /// The wake word (spec §6): Silero VAD finds speech, and each speech segment
-/// goes to Whisper <c>tiny.en</c>, which must hear "Alfred". Whisper runs only
+/// goes to Whisper <c>tiny.en</c>, which must hear "Whiskey". Whisper runs only
 /// while someone is talking. Device-agnostic: the app pushes microphone
 /// audio in, from any thread, one stream at a time.
 /// </summary>
@@ -18,6 +18,12 @@ public sealed class WakeListener : IDisposable
     private const float StartThreshold = 0.5f;
     private const float EndThreshold = 0.35f;
     private const double EndSilence = 0.4;
+    /// <summary>
+    /// After a short segment ("Whiskey," then a breath), wait this long for the
+    /// command before ending it, so the wake word and command are heard together.
+    /// </summary>
+    private const double ShortSegment = 1.0;
+    private const double ShortSegmentSilence = 1.0;
     private const double MinimumSpeech = 0.25;
     private const double MaximumSegment = 6;
     private const double PreRoll = 1.0;
@@ -36,7 +42,7 @@ public sealed class WakeListener : IDisposable
     private long _heardThrough;
     private long _position;
 
-    /// <summary>Raised off the audio thread when Whisper confirms "Alfred" in a segment.</summary>
+    /// <summary>Raised off the audio thread when Whisper confirms the wake word in a segment.</summary>
     public event Action<WakeDetection>? Detected;
 
     /// <summary>Raised for every transcribed segment, for the log.</summary>
@@ -100,7 +106,8 @@ public sealed class WakeListener : IDisposable
             _silence += FrameSeconds;
         }
         var length = (double)_segment.Count / SileroVad.SampleRate;
-        if (_silence < EndSilence && length < MaximumSegment) return;
+        var needed = _speech < ShortSegment ? ShortSegmentSilence : EndSilence;
+        if (_silence < needed && length < MaximumSegment) return;
         var audio = _segment.ToArray();
         var speech = _speech;
         var silence = _silence;

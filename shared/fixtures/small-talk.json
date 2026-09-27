@@ -1,6 +1,6 @@
 {
   "_source": "Mac: Tests/NotchAssistantCoreTests/YouTubeAndSmallTalkTests.swift (SmallTalkTests)",
-  "answered": ["Hi how are you", "hello", "Good morning Alfred", "thanks", "What can you do?", "Alfred"],
+  "answered": ["Hi how are you", "hello", "Good morning Whiskey", "thanks", "What can you do?", "Whiskey"],
   "notSmallTalk": ["open spotify", "hi open spotify", "thanks open youtube", "good morning playlist"],
   "contentRefusals": ["read me what's in my notes file", "summarise my report", "what's inside budget.xlsx"],
   "notContentRefusals": ["open my notes", "search for how to read faster"]

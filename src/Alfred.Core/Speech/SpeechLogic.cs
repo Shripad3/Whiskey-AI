@@ -3,18 +3,20 @@ namespace Alfred.Core;
 /// <summary>
 /// Second-stage check on a wake-word detection: false positives are the main
 /// risk. Whisper hears the audio from before the detection, so a real
-/// "Alfred" shows up in the transcript; one without it is dropped silently.
+/// "Whiskey" shows up in the transcript; one without it is dropped silently.
 /// </summary>
 public static class WakePhrase
 {
-    public const string Name = "alfred";
+    /// <summary>The wake word as a compact key; <see cref="DisplayName"/> is how it's written.</summary>
+    public const string Name = "whiskey";
+    public const string DisplayName = "Whiskey";
     /// <summary>How far into the transcript the wake word may appear.</summary>
     private const int SearchWords = 10;
 
     /// <summary>
     /// The command with the wake word removed, or null when the transcript
-    /// doesn't contain it (a false detection). "Hey Alfred, open Spotify" →
-    /// "open Spotify". "Good morning Alfred" stays as it is (small talk answers it).
+    /// doesn't contain it (a false detection). "Hey Whiskey, open Spotify" →
+    /// "open Spotify". "Good morning Whiskey" stays as it is (small talk answers it).
     /// </summary>
     public static string? Command(string transcript)
     {
@@ -22,7 +24,7 @@ public static class WakePhrase
         var keys = words.Select(SpokenText.Key).ToArray();
         for (var index = 0; index < Math.Min(keys.Length, SearchWords); index++)
         {
-            var length = IsWakeWord(keys[index]) ? 1 : index + 1 < keys.Length && IsWakeWord(keys[index] + keys[index + 1]) ? 2 : 0;
+            var length = IsWakeWord(keys[index]) ? 1 : index + 1 < keys.Length && IsSplitWakeWord(keys[index], keys[index + 1]) ? 2 : 0;
             if (length == 0) continue;
             var command = SpokenText.Clean(string.Join(' ', words[(index + length)..]));
             return command.Length == 0 ? transcript : command;
@@ -55,13 +57,33 @@ public static class WakePhrase
     public static bool Contains(string text)
     {
         var keys = text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(SpokenText.Key).ToArray();
-        return keys.Where((key, i) => IsWakeWord(key) || (i + 1 < keys.Length && IsWakeWord(key + keys[i + 1]))).Any();
+        return keys.Where((key, i) => IsWakeWord(key) || (i + 1 < keys.Length && IsSplitWakeWord(key, keys[i + 1]))).Any();
     }
 
-    /// <summary>Exact, a known mis-hearing, or close in spelling.</summary>
+    /// <summary>How Whisper writes "whiskey" when it isn't sure: the Scottish spelling, plurals, typos.</summary>
+    /// <summary>"Wispy" is how Whisper often hears it in a British voice; the word itself is rare in speech.</summary>
+    private static readonly HashSet<string> Mishearings = ["whisky", "whiskeys", "whiskies", "wiskey", "wisky", "whiskie", "whiskeyy", "wispy"];
+
+    /// <summary>
+    /// Real words close enough in spelling to pass the similarity test, which
+    /// must never wake it: "whisper" especially is common in speech.
+    /// </summary>
+    private static readonly HashSet<string> NearMisses = ["whisper", "whispers", "whisk", "whisks", "whisked", "whisker", "whiskers", "whiskas", "whiskered"];
+
+    /// <summary>
+    /// Heard as two words ("Whis key"). Exact or a known mishearing only: fuzzy
+    /// matching here turned "Whisk V eggs" into "whiskv", close enough to wake.
+    /// </summary>
+    private static bool IsSplitWakeWord(string first, string second)
+    {
+        var joined = first + second;
+        return !NearMisses.Contains(first) && (joined == Name || Mishearings.Contains(joined));
+    }
+
+    /// <summary>Exact, a known mis-hearing, or close in spelling, but never a word that merely looks like it.</summary>
     public static bool IsWakeWord(string key) =>
-        key == Name || key is "alfreds" or "alfredo" or "alfie" or "alford" or "alfrid" or "alfret"
-        || (key.Length >= 5 && AppNameMatcher.Similarity(key, Name) >= 0.7);
+        key == Name || Mishearings.Contains(key)
+        || (!NearMisses.Contains(key) && key.Length >= 5 && AppNameMatcher.Similarity(key, Name) >= 0.7);
 }
 
 /// <summary>

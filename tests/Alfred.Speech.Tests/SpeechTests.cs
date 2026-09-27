@@ -77,8 +77,8 @@ public class SpeechTests
     }
 
     [Theory]
-    [InlineData("alfred_open_spotify", "open Spotify")]
-    [InlineData("hey_alfred_weather", "what's the weather like tomorrow")]
+    [InlineData("whiskey_open_spotify", "open Spotify")]
+    [InlineData("hey_whiskey_weather", "what's the weather like tomorrow")]
     public async Task WakeWordIsHeardWithItsCommand(string clip, string command)
     {
         if (!Have(Model("silero_vad.onnx"), Model("ggml-tiny.en.bin"), Clip(clip))) return;
@@ -94,6 +94,9 @@ public class SpeechTests
 
     [Theory]
     [InlineData("offered_coffee")]
+    [InlineData("whisper_to_me")]
+    [InlineData("whisk_the_eggs")]
+    [InlineData("alfred_open_spotify")]
     [InlineData("all_friends")]
     [InlineData("set_timer")]
     public async Task OtherSpeechDoesNotWake(string clip)
@@ -115,12 +118,12 @@ public class SpeechTests
     [Fact]
     public async Task DisabledListenerHearsNothing()
     {
-        if (!Have(Model("silero_vad.onnx"), Model("ggml-tiny.en.bin"), Clip("alfred_open_spotify"))) return;
+        if (!Have(Model("silero_vad.onnx"), Model("ggml-tiny.en.bin"), Clip("whiskey_open_spotify"))) return;
         using var tiny = new WhisperTranscriber(Model("ggml-tiny.en.bin"), useGpu: false);
         using var listener = new WakeListener(new SileroVad(Model("silero_vad.onnx")), tiny.TranscribeAsync);
         var woke = false;
         listener.Detected += _ => woke = true;
-        Stream(Padded(ReadWav(Clip("alfred_open_spotify"))), samples => listener.Push(samples));
+        Stream(Padded(ReadWav(Clip("whiskey_open_spotify"))), samples => listener.Push(samples));
         await Task.Delay(3000);
         Assert.False(woke);
     }

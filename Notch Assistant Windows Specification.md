@@ -4,7 +4,7 @@ Sep 26, 2026 · draft for review · companion to the Mac spec, [Notch Assistant 
 
 ## 1. Overview and goals
 
-A Windows edition of Alfred, the voice assistant built for the MacBook notch. The user says "Alfred, …" (or holds a hotkey). A **local** language model turns the words into a plan, and the plan runs as tool calls on the PC. The first target machine is an **HP Omen 16**.
+A Windows edition of Alfred, the voice assistant built for the MacBook notch. The user says "Whiskey, …" (or holds a hotkey); the assistant keeps the name Alfred, but the wake word is "Whiskey". A **local** language model turns the words into a plan, and the plan runs as tool calls on the PC. The first target machine is an **HP Omen 16**.
 
 This is a new application, not a port. The Mac app is Swift and uses macOS frameworks throughout, none of which exist on Windows. What carries over:
 
@@ -64,7 +64,7 @@ Unlike the fanless M4 Air, heat is not the ceiling; **battery and GPU switching 
 | Model | **A 4B-class instruct model, Q4_K_M GGUF** (Qwen3-4B or Phi-4-mini, chosen by the intent test corpus, §12); Qwen3-8B offered as an option. Gemma is left out: its licence is Google's own terms, not open source (Goal 1) | A 4B model at Q4 is about 2.5–3 GB of VRAM, leaving ample room for Whisper, Kokoro and a running game within 8 GB, and is stronger than the Mac's 3B | 7–8B as default (about 5 GB at Q4: fits in 8 GB alongside Whisper, but leaves little headroom while a game is running, and is slower on the CPU fallback) |
 | Speech to text | **whisper.cpp via Whisper.net (MIT)**, `small.en` on GPU, `base.en` on CPU | Accurate on accents; on GPU a 3 s command transcribes in about 0.3 s | Windows.Media.SpeechRecognition (on-device and streaming, but noticeably less accurate) |
 | End of speech | **Silero VAD (MIT, ONNX)** | Reliable end-of-speech detection in noisy rooms; also gates the wake word | Energy threshold (the Mac's `Endpointer`), kept as the fallback |
-| Wake word | **VAD-gated keyword check**: Silero VAD finds speech, then Whisper `tiny.en` **on the CPU** (so the dGPU can sleep) checks the segment for "Alfred" | The same idea as the Mac's speech-recogniser wake word, which beat a trained openWakeWord model on the owner's voice; no training needed; it runs only while someone is talking | openWakeWord with a custom "alfred" model (training failed on the Mac); Porcupine (proprietary) |
+| Wake word | **VAD-gated keyword check**: Silero VAD finds speech, then Whisper `tiny.en` **on the CPU** (so the dGPU can sleep) checks the segment for "Whiskey" | The same idea as the Mac's speech-recogniser wake word, which beat a trained openWakeWord model on the owner's voice; no training needed; it runs only while someone is talking | openWakeWord with a custom "alfred" model (training failed on the Mac); Porcupine (proprietary) |
 | Text to speech | **Windows OneCore voices** by default; **Kokoro-82M** optional (ONNX Runtime + DirectML/CUDA) | OneCore voices need nothing extra. Kokoro is the natural voice from the Mac app | Piper (lighter, less natural) |
 | Audio | NAudio (MIT): capture at 16 kHz mono through the **communications stream with Windows' built-in echo cancellation**, so music or video playing on the speakers is not heard as speech; ducking via Core Audio session volumes | Ducking lowers *other apps' sessions*, not the master volume. That is better than the Mac, which had to lower the master volume | — |
 | Packaging | **Inno Setup installer** (unsigned at first), later signed with **Azure Trusted Signing** | One `.exe` for the friend; SmartScreen warns until it is signed | MSIX (self-signed certificates are awkward to trust on another PC) |
@@ -130,9 +130,10 @@ Windows has no notch, so Alfred appears as a **pill at the top centre of the int
 - **Admin windows:** the app never runs elevated (§11), so Windows stops its keyboard hook, pasting and window moves from reaching an elevated window (Task Manager, installers). While one has focus, hold-to-talk falls back to a press-to-start `RegisterHotKey` toggle, and paste and window arranging say they can't act on that window.
 - **Wake word:**
   - Silero VAD runs continuously on 30 ms frames, at about 1% of one CPU core.
-  - When VAD detects speech, the segment (including a 2.5 s pre-roll ring buffer) goes to Whisper `tiny.en`. An initial prompt of "Alfred" helps recognition but makes Whisper more likely to hear the name in unrelated speech, so it is used only if it passes the false-wake target (§10, W2) against recorded YouTube, game and call audio.
-  - It triggers if the text contains "Alfred" (any prefix: "hey", "okay", "good morning").
-  - A command in the same breath ("Alfred, open Spotify") is taken from that segment directly.
+  - When VAD detects speech, the segment (including a 1 s pre-roll ring buffer) goes to Whisper `tiny.en`, with no initial prompt. A short segment ("Whiskey," then a breath) waits up to 1 s for the command, so the wake word and the command are heard together.
+  - It triggers if the text contains "Whiskey" (any prefix: "hey", "okay", "good morning"), or a known mishearing of it ("whisky", "wispy"). Look-alike words ("whisper", "whisk", "whiskers") never trigger it.
+  - A command in the same breath ("Whiskey, open Spotify") is taken from that segment directly.
+  - Measured on Sep 27, 2026, with 66 synthesized clips in six English voices, 24 of them wake phrases: all 24 woke it, and none of the 42 look-alikes and other sentences did, with both `tiny.en` (median 132 ms on an M4) and `base.en` (255 ms). Real voices still have to be checked on the Omen.
   - Detections are de-duplicated by audio time, as on the Mac.
 - **End of speech:** 0.8 s of VAD silence, a 10 s cap, and 2 s with no speech at all returns to Idle.
 - **Ducking:** while listening, lower other apps' audio sessions to 30% through `IAudioSessionManager2`, and restore them afterwards. Restoring is crash-safe: the previous volumes are saved to disk first.
@@ -196,7 +197,7 @@ Each phase is usable on its own. The friend tests every phase on the Omen.
 | --- | --- | --- |
 | **W0: prove the loop** | Hotkey → Whisper → `DirectMatcher` + local model (constrained JSON) → `openApp`, `openURL`; console output | "open Spotify" and "open YouTube" work in < 2 s from releasing the hotkey, with the model loaded on the GPU |
 | **W1: the pill** | Overlay window, state machine, tray, Settings (Capabilities, Permissions, Model with downloads), `webSearch`, `getWeather`, `currentTime` | All states render on the internal display, and an external monitor doesn't move the pill |
-| **W2: hands-free** | Wake word, VAD endpointing, ducking, OneCore TTS, `controlSpotify`, `systemControl`, file search/open, power profiles | "Alfred, play some music" works across a day with < 2 false wakes |
+| **W2: hands-free** | Wake word, VAD endpointing, ducking, OneCore TTS, `controlSpotify`, `systemControl`, file search/open, power profiles | "Whiskey, play some music" works across a day with < 2 false wakes |
 | **W3: daily use** | Clock tools with toasts, calendar (Outlook/Google), reminders, routines, `arrangeWindow`, `clipboard`, `takeNote` | The Mac clock and calendar test tables pass; an alarm rings with the app closed (toast) while the laptop is awake |
 | **W4: the rest** | File organising with undo, YouTube Tier 2, Kokoro voice, installer signing | Rename then "undo that" restores; the installer runs on a clean Windows install |
 | Later | Gestures (camera + MediaPipe hand landmarks via ONNX), Microsoft Store | — |
@@ -207,7 +208,7 @@ Each phase is usable on its own. The friend tests every phase on the Omen.
 
 **Tested on the Mac:**
 - The shared core: 534 unit tests, most of them the Mac app's own tables.
-- The speech stack on real audio: 15 tests. The wake word fires on "Alfred" and not on three sentences the Mac found tricky.
+- The speech stack on real audio: 15 tests. The wake word fires on "Whiskey" and not on look-alike words or other sentences.
 - The intent corpus through Qwen3-4B.
 
 **Compiled only:** the Windows app has been compiled but not yet run.

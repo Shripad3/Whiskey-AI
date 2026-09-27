@@ -1,6 +1,7 @@
 # Alfred for Windows
 
-A voice assistant for your PC that runs on the PC itself: no cloud AI. Say "Alfred, …" or hold **Ctrl+Alt+Space** and speak.
+A voice assistant for your PC that runs on the PC itself: no cloud AI. Say "Whiskey, …" or hold **Ctrl+Alt+Space** and speak.
+The assistant is called Alfred; its wake word is "Whiskey".
 A local language model works out what you meant, and Alfred does it:
 - opens apps and websites;
 - controls Spotify;
@@ -36,7 +37,7 @@ It's the Windows edition of the Mac notch assistant. The design is in [Notch Ass
 4. Alfred's icon, a white "A" on black, is in the notification area at the bottom right of the taskbar. You may need the ^ arrow to see it. **Right-click it** for the menu.
 5. Hold **Ctrl+Alt+Space**, say **"open Spotify"**, and let go.
 
-To use the wake word, turn it on in **Settings › General**. It then listens for "Alfred, …" while plugged in, and on battery too if you allow it.
+To use the wake word, turn it on in **Settings › General**. It then listens for "Whiskey, …" (for example "Whiskey, open Spotify") while plugged in, and on battery too if you allow it.
 
 ## What to say
 
@@ -58,7 +59,7 @@ To use the wake word, turn it on in **Settings › General**. It then listens fo
 
 **Other ways to control it:**
 - **Escape** cancels anything.
-- A ringing alarm stops when you say "stop" or "snooze", or when you click the buttons.
+- A ringing alarm stops when you say "Whiskey, stop" or "Whiskey, snooze", or when you click the buttons.
 - **Type a command…** in the tray menu works without a microphone.
 
 **Safety rules:**
@@ -102,7 +103,7 @@ Things worth checking on the Omen:
 - the pill appears at the top centre of the laptop screen, including with an external monitor plugged in;
 - the pill stays hidden during a full-screen game, with results spoken instead;
 - the first word isn't cut off when you hold the hotkey;
-- "Alfred" wakes it without false wakes from videos or calls;
+- "Whiskey" wakes it without false wakes from videos, calls or words like "whisper";
 - a timer and an alarm ring, including with Alfred closed (a toast);
 - rename a file, then "undo that".
 

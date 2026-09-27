@@ -158,7 +158,7 @@ internal sealed class SettingsWindow : Window
             Heading("Activation"),
             Row(Label("Hold to talk"), hotkey),
             Note($"Hold the keys, speak, let go. Now: {Chord.Parse(S.Hotkey)}. Needs Ctrl, Alt or Win plus a key; takes effect after restarting Alfred."),
-            Check("Wake word: say “Alfred, …”", S.WakeWordEnabled, v => Store.Update(s => s.WakeWordEnabled = v)),
+            Check($"Wake word: say “{WakePhrase.DisplayName}, …”", S.WakeWordEnabled, v => Store.Update(s => s.WakeWordEnabled = v)),
             Check("Also listen for the wake word on battery", S.WakeWordOnBattery, v => Store.Update(s => s.WakeWordOnBattery = v)),
             Note($"Wake word: {_c.Wake.Status}. The microphone stays open while it listens; nothing leaves this PC."),
             Heading("Voice"),
