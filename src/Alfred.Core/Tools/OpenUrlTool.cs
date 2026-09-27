@@ -8,7 +8,7 @@ public sealed class OpenUrlTool(IAppCatalog apps, ILauncher launcher) : Assistan
     public override string Title => "Open website";
     public override bool RequiresNetwork => true;
     public override IReadOnlySet<string> Keywords { get; } =
-        new HashSet<string> { "open", "go", "website", "site", "com", "org", "www", "page", "visit", "browser" };
+        new HashSet<string>(["open", "go", "website", "site", "com", "org", "www", "page", "visit", "browser", .. WebAddress.KnownSites.Keys.Where(k => k.Length > 1)]);
 
     public override string Description =>
         "Open a website in a browser. \"open YouTube\" or \"go to YouTube\" → url \"https://www.youtube.com\". " +

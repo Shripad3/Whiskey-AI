@@ -449,6 +449,7 @@ public class FileToolTests : IDisposable
         Assert.Contains("System.FileExtension = '.pdf'", sql);
         Assert.Contains("System.DateModified >=", sql);
         Assert.DoesNotContain("Contents", sql);
+        Assert.Contains("System.ItemType <> 'Directory'", WindowsSearchSql.Build(FileQuery.FromText("x", null, null), ["C:\\a"]));
         Assert.DoesNotContain("brien'", sql.Replace("''", ""));
     }
 }

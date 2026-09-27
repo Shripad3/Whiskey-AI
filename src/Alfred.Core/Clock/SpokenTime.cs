@@ -429,6 +429,17 @@ public sealed record SpokenWhen(DateTime Date, bool HasTime, IReadOnlySet<int> C
                 var noon = w[index] != "midnight";
                 return new TimeOfDay { Hour = noon ? 12 : 0, Meridiem = noon ? Alfred.Core.Meridiem.Pm : Alfred.Core.Meridiem.Am, Consumed = consumed, Score = 3 };
             }
+            case "half" when index + 1 < w.Count && words.Number(index + 1) is { } british
+                                && british.Value == Math.Round(british.Value) && (int)british.Value is >= 1 and <= 12
+                                && (index + 1 + british.Length >= w.Count || SpokenDuration.Unit(w[index + 1 + british.Length]) is null):
+            {
+                // "half six": British for 6:30.
+                hour = (int)british.Value;
+                minute = 30;
+                position = index + 1 + british.Length;
+                score = 2;
+                break;
+            }
             case "half" or "quarter":
             {
                 // "half past 7", "quarter to 8".

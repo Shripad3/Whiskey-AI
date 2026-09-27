@@ -555,3 +555,97 @@ public class OAuthTests
         Assert.False(api.IsSignedIn);
     }
 }
+
+/// <summary>Cases the extended intent corpus found (Sep 27, 2026).</summary>
+public class CorpusRegressionTests : IDisposable
+{
+    private readonly World _world = new();
+
+    public void Dispose() => _world.Dispose();
+
+    [Fact]
+    public void DownloadsFolderMeansTheFolderNotFolders()
+    {
+        var args = _world.Direct("delete everything in my downloads folder")!.Value.Args;
+        Assert.Equal("trash", args.Str("operation"));
+        Assert.Equal("Downloads", args.Str("folder"));
+        Assert.Null(args.Str("kind"));
+    }
+
+    [Fact]
+    public void ComputedFieldsStayOutOfArguments()
+    {
+        var args = _world.Direct("delete everything in downloads")!.Value.Args;
+        Assert.False(args.ContainsKey("files"));
+        Assert.False(args.ContainsKey("summary"));
+    }
+
+    [Theory]
+    [InlineData("find out who won the f1 race yesterday")]
+    [InlineData("find how many people live in tokyo")]
+    public void QuestionsAreNotFileSearches(string said) => Assert.NotEqual("findFiles", _world.Direct(said)?.Tool);
+
+    [Theory]
+    [InlineData("turn the volume down to twenty", "setVolume", "20")]
+    [InlineData("volume to twenty five", "setVolume", "25")]
+    [InlineData("set the brightness to seventy", "setBrightness", "70")]
+    public void SpokenPercentages(string said, string action, string value)
+    {
+        var args = _world.Direct(said)!.Value.Args;
+        Assert.Equal(action, args.Str("action"));
+        Assert.Equal(value, args.Str("value"));
+    }
+
+    [Fact]
+    public void HalfSixIsSixThirty()
+    {
+        var when = SpokenWhen.Parse("tomorrow at half six", SpokenWhenTests.Now)!;
+        Assert.Equal(new DateTime(2026, 9, 27, 6, 30, 0), when.Date);
+        Assert.Equal(new DateTime(2026, 9, 26, 17, 30, 0), SpokenWhen.Parse("half past 5", SpokenWhenTests.Now)!.Date);
+        Assert.Equal(1800, SpokenDuration.Parse("half an hour"));
+    }
+
+    [Fact]
+    public void GetMeUpIsAnAlarm()
+    {
+        var match = _world.Direct("get me up at half six tomorrow")!.Value;
+        Assert.Equal("alarm", match.Tool);
+        Assert.Equal("set", match.Args.Str("action"));
+    }
+
+    [Fact]
+    public void DontLetMeForgetIsAReminder()
+    {
+        var match = _world.Direct("don't let me forget to call the dentist at 4")!.Value;
+        Assert.Equal("reminder", match.Tool);
+        Assert.Equal("call the dentist", match.Args.Str("task"));
+        Assert.Equal("at 4", match.Args.Str("when"));
+    }
+
+    [Fact]
+    public void SiteNamesOfferTheWebsiteTool() =>
+        Assert.Contains("openURL", ToolRouter.Relevant("i want to watch something on netflix", _world.Tools).Select(t => t.Name));
+
+    [Fact]
+    public async Task WindowAppFromAnyWord()
+    {
+        var match = _world.Direct("make chrome take up the left side of the screen")!.Value;
+        Assert.Equal("chrome", match.Args.Str("app"));
+        Assert.Equal("Google Chrome: left half", (await _world.Say("make chrome take up the left side of the screen")).Text);
+        await _world.Run("arrangeWindow", "put chrome on the left please now", ("action", "leftHalf"), ("app", "chrome please now"));
+    }
+}
+
+public class ReminderPhrasingTests : IDisposable
+{
+    private readonly World _world = new();
+
+    public void Dispose() => _world.Dispose();
+
+    [Theory]
+    [InlineData("Please remind me to water the plants at 6", "water the plants")]
+    [InlineData("could you remind me to call Sam tomorrow", "call Sam")]
+    [InlineData("remember to buy milk tonight at 8", "buy milk")]
+    [InlineData("don't forget to feed the cat at 7", "feed the cat")]
+    public void Openings(string said, string task) => Assert.Equal(task, _world.Direct(said)!.Value.Args.Str("task"));
+}

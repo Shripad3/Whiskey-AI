@@ -10,7 +10,7 @@ namespace Alfred.Core;
 /// is acted on. Enforced here in the executor, after canonicalisation, never
 /// by prompt. Failing any check refuses the operation; there is no override.
 /// </summary>
-public static class FileAccess
+public static class FileScope
 {
     /// <summary>Build output, dependencies and app data: never the user's own files, and changing them breaks things.</summary>
     public static readonly IReadOnlySet<string> DeniedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -104,7 +104,7 @@ public interface IRecycleBin
 /// <summary>
 /// Metadata search by walking the allowed folders, as a fallback when the
 /// Windows Search index is off or unreachable. Bounded in depth, count and
-/// time; skips everything <see cref="FileAccess"/> would refuse.
+/// time; skips everything <see cref="FileScope"/> would refuse.
 /// </summary>
 public sealed class DirectoryFileSearch : IFileSearch
 {
@@ -131,7 +131,7 @@ public sealed class DirectoryFileSearch : IFileSearch
                 {
                     visited++;
                     var name = Path.GetFileName(entry);
-                    if (name.StartsWith('.') || name.StartsWith('$') || FileAccess.DeniedFolders.Contains(name)) continue;
+                    if (name.StartsWith('.') || name.StartsWith('$') || FileScope.DeniedFolders.Contains(name)) continue;
                     var isFolder = Directory.Exists(entry);
                     if (isFolder && depth < MaxDepth) pending.Push((entry, depth + 1));
                     if (Matches(entry, name, isFolder, query, range)) found.Add(new FoundFile(entry, name, Changed(entry)));
@@ -183,14 +183,14 @@ public static class WindowsSearchSql
         switch (query.Kind)
         {
             case FileKind.Folder:
-                clauses.Add("System.Kind = 'folder'");
+                clauses.Add("System.ItemType = 'Directory'");
                 break;
             case { } kind:
                 clauses.Add("(" + string.Join(" OR ", FileKinds.Extensions(kind).Select(e => $"System.FileExtension = '{Quote(e)}'")) + ")");
                 if (kind == FileKind.Screenshot) clauses.Add("(System.FileName LIKE 'Screenshot%' OR System.ItemFolderPathDisplay LIKE '%\\Screenshots%')");
                 break;
             default:
-                clauses.Add("System.Kind <> 'folder'");
+                clauses.Add("System.ItemType <> 'Directory'");
                 break;
         }
         if (query.Period is { } period)

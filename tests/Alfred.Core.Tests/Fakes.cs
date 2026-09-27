@@ -146,13 +146,13 @@ internal sealed class FakeRecycleBin(string folder) : IRecycleBin
         else File.Move(inBin, original);
     }
 
-    public bool Contains(string path) => FileAccess.IsInside(Path.GetFullPath(path), folder);
+    public bool Contains(string path) => FileScope.IsInside(Path.GetFullPath(path), folder);
 }
 
 /// <summary>A throwaway tree with Documents, Downloads and Desktop, deleted afterwards.</summary>
 internal sealed class TempTree : IDisposable
 {
-    public string Base { get; } = FileAccess.Canonical(Path.Combine(Path.GetTempPath(), "alfred-tests-" + Guid.NewGuid().ToString("N")));
+    public string Base { get; } = FileScope.Canonical(Path.Combine(Path.GetTempPath(), "alfred-tests-" + Guid.NewGuid().ToString("N")));
     public string Documents => Path.Combine(Base, "Documents");
     public string Downloads => Path.Combine(Base, "Downloads");
     public string Desktop => Path.Combine(Base, "Desktop");

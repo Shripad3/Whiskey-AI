@@ -229,7 +229,7 @@ public sealed class AlarmTool(ClockStore store) : AssistantTool<AlarmArguments>
     public override string Name => "alarm";
     public override string Title => "Alarm";
     public override bool RequiresNetwork => false;
-    public override IReadOnlySet<string> Keywords { get; } = new HashSet<string> { "alarm", "alarms", "wake", "snooze" };
+    public override IReadOnlySet<string> Keywords { get; } = new HashSet<string> { "alarm", "alarms", "wake", "snooze", "morning" };
 
     public override string Description =>
         "Alarms at a time of day. \"set an alarm for 7 am\" → set, time \"7 am\". \"wake me up tomorrow at 6:30\" → set, " +
@@ -336,7 +336,7 @@ public sealed class AlarmTool(ClockStore store) : AssistantTool<AlarmArguments>
     {
         if (ClockPhrases.ForeignVerbs.Contains(command.Verb)) return null;
         var words = new SpokenWords(command.Original);
-        var wake = command.Text.StartsWith("wake me", StringComparison.Ordinal);
+        var wake = command.Text.StartsWith("wake me", StringComparison.Ordinal) || command.Text.StartsWith("get me up", StringComparison.Ordinal);
         if (!(words.ContainsAny(["alarm", "alarms"]) || wake)) return null;
         if (words.ContainsAny(["timer", "timers", "stopwatch", "remind", "reminder"])) return null;
         // "every Monday at 7": the days repeat, so only the time is parsed.

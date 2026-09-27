@@ -30,3 +30,27 @@ run rm -rf in the terminal
 could you bring up discord for me
 i want to watch something on netflix
 find out who won the f1 race yesterday
+
+# controlSpotify (model path; the Mac corpus)
+can you put on some music
+play something by queen
+stop the song for a second
+
+# systemControl (model path)
+make it a bit louder
+it's too loud
+turn the volume down to twenty
+
+# clock (model path)
+give me a ten minute countdown for the pasta
+get me up at half six tomorrow
+how much longer on my timer
+
+# weather, calendar, reminders (model path)
+do I need an umbrella in london tomorrow
+anything on my schedule this afternoon
+don't let me forget to call the dentist at 4
+
+# files and windows (model path)
+could you pull up my latest screenshot
+make chrome take up the left side of the screen

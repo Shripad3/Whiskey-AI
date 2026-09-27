@@ -3,9 +3,11 @@
     <Project Path="src/Alfred.Core/Alfred.Core.csproj" />
     <Project Path="src/Alfred.Llm/Alfred.Llm.csproj" />
     <Project Path="src/Alfred.PlanCli/Alfred.PlanCli.csproj" />
+    <Project Path="src/Alfred.Speech/Alfred.Speech.csproj" />
     <Project Path="src/Alfred.Windows/Alfred.Windows.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Alfred.Core.Tests/Alfred.Core.Tests.csproj" />
+    <Project Path="tests/Alfred.Speech.Tests/Alfred.Speech.Tests.csproj" />
   </Folder>
 </Solution>

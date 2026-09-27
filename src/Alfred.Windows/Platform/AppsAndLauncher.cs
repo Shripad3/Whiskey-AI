@@ -3,7 +3,7 @@ using System.Text;
 using Alfred.Core;
 using Microsoft.Win32;
 
-namespace Alfred.Windows;
+namespace Alfred.Windows.Platform;
 
 /// <summary>
 /// The Start menu as the user sees it: the <c>shell:AppsFolder</c> virtual
@@ -11,15 +11,42 @@ namespace Alfred.Windows;
 /// rights (spec §8, openApp). Scanned at startup and again when a name isn't
 /// found, so a newly installed app turns up.
 /// </summary>
-internal sealed class WindowsAppCatalog : IAppCatalog
+internal sealed class WindowsAppCatalog(SettingsStore settings) : IAppCatalog
 {
     private static readonly string[] Junk = ["uninstall", "readme", "read me", "help", "documentation", "release notes", "website"];
     private IReadOnlyList<InstalledApp>? _apps;
     private IReadOnlyList<InstalledApp>? _browsers;
 
+    private DateTime _scanned;
+
+    /// <summary>Built-in aliases plus the user's own from Settings, which win.</summary>
+    public IReadOnlyDictionary<string, string> Aliases
+    {
+        get
+        {
+            var merged = new Dictionary<string, string>(AppNameMatcher.DefaultAliases);
+            foreach (var (spoken, app) in settings.Current.AppAliases) merged[SpokenText.Key(spoken)] = app;
+            return merged;
+        }
+    }
+
     public IReadOnlyList<InstalledApp> Apps(bool refresh = false)
     {
-        if (refresh || _apps is null) _apps = OnStaThread(ScanAppsFolder);
+        // A miss rescans, but not more than every few seconds.
+        if (_apps is null || (refresh && DateTime.UtcNow - _scanned > TimeSpan.FromSeconds(5)))
+        {
+            try
+            {
+                _apps = OnStaThread(ScanAppsFolder);
+                _browsers = null;
+            }
+            catch (InvalidOperationException e)
+            {
+                Log.Error("Start menu scan failed", e);
+                _apps ??= [];
+            }
+            _scanned = DateTime.UtcNow;
+        }
         return _apps;
     }
 
@@ -113,6 +140,13 @@ internal sealed class WindowsAppCatalog : IAppCatalog
 /// </summary>
 internal sealed class WindowsLauncher : ILauncher
 {
+    /// <summary>Opens a file with its app, after the file tools have validated its path.</summary>
+    public static Task OpenFileAsync(string path)
+    {
+        Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
+        return Task.CompletedTask;
+    }
+
     public Task LaunchAsync(InstalledApp app, CancellationToken cancellationToken)
     {
         // Explorer resolves any AppsFolder item, desktop or Store app alike.

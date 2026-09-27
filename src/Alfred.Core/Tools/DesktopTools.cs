@@ -128,7 +128,13 @@ public sealed class WindowTool(IWindowManager windows) : AssistantTool<WindowArg
             throw new ToolException("I don't know how to do that with a window");
         string? app = null;
         if (ClockPhrases.Grounded(arguments.App, context) is { } spoken)
-            app = AppNameMatcher.Match(spoken, windows.RunningApps()) ?? throw new ToolException($"{spoken} isn't open");
+        {
+            var running = windows.RunningApps();
+            // The whole name, else any one word of it ("chrome take up" → Chrome).
+            app = AppNameMatcher.Match(spoken, running)
+                  ?? SpokenText.Words(spoken).Select(w => AppNameMatcher.Match(w, running)).FirstOrDefault(m => m is not null)
+                  ?? throw new ToolException($"{spoken} isn't open");
+        }
         var name = windows.Arrange(app, action);
         return Task.FromResult<ToolResult>($"{name}: {Describe(arguments.Action)}");
     }
@@ -194,7 +200,7 @@ public sealed class WindowTool(IWindowManager windows) : AssistantTool<WindowArg
         "put", "move", "snap", "tile", "send", "make", "set", "throw", "push", "place", "drag", "the", "this", "that", "my", "window",
         "windows", "to", "on", "of", "in", "a", "it", "screen", "display", "monitor", "half", "side", "left", "right", "top", "bottom",
         "full", "fullscreen", "maximize", "maximise", "minimize", "minimise", "center", "centre", "other", "next", "external", "exit",
-        "leave", "fill", "app", "please", "and",
+        "leave", "fill", "app", "please", "and", "take", "takes", "up", "go", "goes", "sit", "can", "you", "could",
     ];
 
     /// <summary>"put Chrome on the left half", "maximize this window", "full screen", "move this to the other display".</summary>

@@ -82,7 +82,12 @@ public sealed class Endpointer
     private bool _heardSpeech;
 
     /// <param name="speechAlreadyHeard">True when the wake word's own segment was speech.</param>
-    public Endpointer(bool speechAlreadyHeard = false) => _heardSpeech = speechAlreadyHeard;
+    /// <param name="silenceSoFar">Trailing silence already heard at the end of that segment, in seconds.</param>
+    public Endpointer(bool speechAlreadyHeard = false, double silenceSoFar = 0)
+    {
+        _heardSpeech = speechAlreadyHeard;
+        _silence = silenceSoFar;
+    }
 
     /// <summary>Feed each frame's speech decision and its duration in seconds.</summary>
     public Decision Feed(bool isSpeech, double duration)

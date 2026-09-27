@@ -140,13 +140,18 @@ public sealed class SystemControlTool(ISystemControl system) : AssistantTool<Sys
             case "turn off do not disturb" or "do not disturb off" or "disable do not disturb" or "turn off focus" or "focus mode off":
                 return new("doNotDisturbOff");
         }
-        // "set the volume to 40", "volume 40", "volume to 40 percent"
-        var words = text.Split(' ').Where(w => w is not ("set" or "the" or "to" or "percent" or "at")).ToArray();
-        if (words.Length == 2 && int.TryParse(words[1], out var value) && value is >= 0 and <= 100)
-        {
-            if (words[0] == "volume") return new("setVolume", value);
-            if (words[0] == "brightness") return new("setBrightness", value);
-        }
+        // "set the volume to 40", "volume 40", "volume to 40 percent", "turn the volume down to twenty"
+        var words = text.Split(' ').Where(w => w is not ("set" or "the" or "to" or "percent" or "at" or "turn" or "up" or "down" or "change" or "put")).ToArray();
+        if (words.Length is 2 or 3 && words[0] is "volume" or "brightness" && Percent(words[1..]) is { } value)
+            return new(words[0] == "volume" ? "setVolume" : "setBrightness", value);
         return null;
+    }
+
+    /// <summary>"40", "twenty", "twenty five": a whole percentage.</summary>
+    private static int? Percent(string[] words)
+    {
+        var spoken = new SpokenWords(string.Join(' ', words));
+        return spoken.Number(0) is { Length: var length, Value: var value } && length == spoken.Count && value == Math.Round(value) && value is >= 0 and <= 100
+            ? (int)value : null;
     }
 }

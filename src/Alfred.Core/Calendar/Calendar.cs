@@ -330,7 +330,7 @@ public sealed class ReminderTool(ClockStore clock, IReminderSink sink) : Assista
     public override string Name => "reminder";
     public override string Title => "Reminder";
     public override bool RequiresNetwork => false;
-    public override IReadOnlySet<string> Keywords { get; } = new HashSet<string> { "remind", "reminder", "reminders" };
+    public override IReadOnlySet<string> Keywords { get; } = new HashSet<string> { "remind", "reminder", "reminders", "forget", "remember" };
 
     public override string Description =>
         "Add a reminder. \"remind me to call Mum at 6\" → task \"call Mum\", when \"at 6\". " +
@@ -371,6 +371,7 @@ public sealed class ReminderTool(ClockStore clock, IReminderSink sink) : Assista
     private static readonly string[] Starts =
     [
         "remind me", "set a reminder", "set reminder", "add a reminder", "create a reminder", "make a reminder", "new reminder", "reminder",
+        "don t let me forget", "do not let me forget", "remember to", "don t forget to",
     ];
 
     /// <summary>"remind me to call Mum at 6", "remind me in 20 minutes to check the oven", "set a reminder to …".</summary>
@@ -379,14 +380,25 @@ public sealed class ReminderTool(ClockStore clock, IReminderSink sink) : Assista
         var start = Starts.FirstOrDefault(s => command.Text == s || command.Text.StartsWith(s + " ", StringComparison.Ordinal));
         if (start is null) return null;
         var words = new SpokenWords(command.Original);
-        // Skip the words of the opening phrase, found in the original text.
-        var startWords = start.Split(' ');
-        int index = 0, matched = 0;
-        while (index < words.Count && matched < startWords.Length)
+        // Skip the opening phrase's words in the original text, letter by
+        // letter: "don't" is "don t" in the command but "dont" here.
+        // It may start a few words in ("Please remind me…", "Hey, can you remind me…").
+        var opening = start.Replace(" ", "", StringComparison.Ordinal);
+        var index = -1;
+        for (var first = 0; first < Math.Min(words.Count, 5) && index < 0; first++)
         {
-            if (words.Lower[index] == startWords[matched]) matched++;
-            index++;
+            var consumed = "";
+            var at = first;
+            while (at < words.Count && consumed.Length < opening.Length)
+            {
+                var next = consumed + new string(words.Lower[at].Where(char.IsLetterOrDigit).ToArray());
+                if (!opening.StartsWith(next, StringComparison.Ordinal)) break;
+                consumed = next;
+                at++;
+            }
+            if (consumed == opening) index = at;
         }
+        if (index < 0) return null;
         var when = SpokenWhen.Find(words, clock.Now, index);
         var taken = when?.Consumed ?? new HashSet<int>();
         var rest = Enumerable.Range(index, Math.Max(0, words.Count - index)).Where(i => !taken.Contains(i)).ToList();

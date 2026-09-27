@@ -104,8 +104,10 @@ public sealed record FileQuery(IReadOnlyList<string> Words, FileKind? Kind = nul
     /// <summary>Spoken folder names → allowed root folder names.</summary>
     public static readonly IReadOnlyDictionary<string, string> Folders = new Dictionary<string, string>
     {
-        ["desktop"] = "Desktop", ["documents"] = "Documents", ["document folder"] = "Documents",
-        ["downloads"] = "Downloads", ["download folder"] = "Downloads",
+        ["desktop"] = "Desktop", ["desktop folder"] = "Desktop",
+        ["documents"] = "Documents", ["document folder"] = "Documents", ["documents folder"] = "Documents",
+        ["downloads"] = "Downloads", ["download folder"] = "Downloads", ["downloads folder"] = "Downloads",
+        ["pictures"] = "Pictures", ["pictures folder"] = "Pictures", ["videos"] = "Videos", ["music folder"] = "Music",
     };
 
     /// <summary>
@@ -128,7 +130,8 @@ public sealed record FileQuery(IReadOnlyList<string> Words, FileKind? Kind = nul
     {
         var text = " " + SpokenText.Normalize(spoken) + " ";
         string? folder = null;
-        foreach (var (phrase, root) in Folders)
+        // Longest first: "downloads folder" before "downloads", so "folder" isn't left behind as a file kind.
+        foreach (var (phrase, root) in Folders.OrderByDescending(f => f.Key.Length))
         {
             foreach (var preposition in new[] { "in my", "on my", "in the", "on the", "in", "on", "from my", "from the" })
             {

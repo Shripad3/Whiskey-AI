@@ -6,6 +6,9 @@ public interface ILanguageModel
     /// <summary>Null when the model can run; otherwise the reason it cannot.</summary>
     AssistantFailure? UnavailableReason();
 
+    /// <summary>Loads the model if it isn't loaded, before the planning time limit starts.</summary>
+    Task PrepareAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
     /// <summary>Greedy, grammar-constrained completion of one system + user exchange.</summary>
     Task<string> CompleteAsync(string instructions, string command, string grammar, CancellationToken cancellationToken);
 }
@@ -22,7 +25,7 @@ public sealed class LocalModelEngine(ILanguageModel model, TimeSpan? timeout = n
     public async Task<Plan> PlanAsync(string transcript, IReadOnlyList<IAssistantTool> tools, CancellationToken cancellationToken)
     {
         transcript = SpokenText.Clean(transcript);
-        // Routines come first here once they exist (W3).
+        // Routines were matched by the coordinator before this.
         if ((SmallTalk.Reply(transcript) ?? ContentRequests.Refusal(transcript)) is { } reply)
             return new Plan([]) { IsDirect = true, Reply = reply };
         if (tools.Count == 0) return new Plan([]);
@@ -30,6 +33,8 @@ public sealed class LocalModelEngine(ILanguageModel model, TimeSpan? timeout = n
 
         if (model.UnavailableReason() is { } reason) throw reason;
         var routed = ToolRouter.Relevant(transcript, tools);
+        // Loading can take seconds on first use; only the planning itself is timed.
+        await model.PrepareAsync(cancellationToken);
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         limit.CancelAfter(Timeout);
         string output;

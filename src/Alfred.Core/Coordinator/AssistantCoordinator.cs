@@ -1,9 +1,10 @@
 namespace Alfred.Core;
 
-/// <summary>How a hands-free activation started.</summary>
+/// <summary>How a hands-free activation started: the wake word, or the press-to-start hotkey over an admin window.</summary>
 /// <param name="Confirmed">Whisper already heard "Alfred" in the wake segment.</param>
 /// <param name="Command">The command said in the same breath ("Alfred, open Spotify"), when the segment held one.</param>
-public sealed record WakeContext(bool Confirmed, string? Command);
+/// <param name="FromWakeWord">False for the press-to-start hotkey: endpointed like the wake word, but nothing to strip.</param>
+public sealed record WakeContext(bool Confirmed, string? Command, bool FromWakeWord = true);
 
 public abstract record SpeechUpdate
 {
@@ -294,7 +295,11 @@ public sealed class AssistantCoordinator
                 Apply(new AssistantEvent.Silence(), id);
                 return;
             }
-            if (wake is { Confirmed: true })
+            if (wake is { FromWakeWord: false })
+            {
+                // Press-to-start: an ordinary command, just endpointed by silence.
+            }
+            else if (wake is { Confirmed: true })
             {
                 // Whisper already heard "Alfred"; only tidy the transcript.
                 transcript = WakePhrase.CommandAfterConfirmedWake(transcript);

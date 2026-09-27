@@ -52,9 +52,9 @@ public sealed class FileOrganizer(Func<IReadOnlyList<string>> roots, FileJournal
             var source = CheckedSource(file);
             if (!copying)
             {
-                if (FileAccess.SamePath(Path.GetDirectoryName(source)!, folder))
+                if (FileScope.SamePath(Path.GetDirectoryName(source)!, folder))
                     throw new ToolException($"{Path.GetFileName(source)} is already in {Path.GetFileName(folder)}");
-                if (FileAccess.IsInside(folder, source)) throw new ToolException($"Can't move {Path.GetFileName(source)} into itself");
+                if (FileScope.IsInside(folder, source)) throw new ToolException($"Can't move {Path.GetFileName(source)} into itself");
                 // Moves between drives are copies and deletes: not reversible.
                 if (!string.Equals(Path.GetPathRoot(source), Path.GetPathRoot(folder), StringComparison.OrdinalIgnoreCase))
                     throw new ToolException($"{Path.GetFileName(source)} is on a different drive; I only move files within one drive");
@@ -147,7 +147,7 @@ public sealed class FileOrganizer(Func<IReadOnlyList<string>> roots, FileJournal
                     bin.Recycle(step.To);
                     break;
                 case FileJournal.StepKind.Recycle when step.From is { } original:
-                    if (!Allowed(original) || FileAccess.SamePath(step.To, original) || !bin.Contains(step.To) || !Exists(step.To) || Exists(original))
+                    if (!Allowed(original) || FileScope.SamePath(step.To, original) || !bin.Contains(step.To) || !Exists(step.To) || Exists(original))
                     {
                         skipped++;
                         continue;
@@ -174,7 +174,7 @@ public sealed class FileOrganizer(Func<IReadOnlyList<string>> roots, FileJournal
 
     private string CheckedSource(string file)
     {
-        var source = FileAccess.Validated(file, roots()) ?? throw new ToolException($"{Path.GetFileName(file)} is outside the folders I may change");
+        var source = FileScope.Validated(file, roots()) ?? throw new ToolException($"{Path.GetFileName(file)} is outside the folders I may change");
         if (!Exists(source)) throw new ToolException($"{Path.GetFileName(source)} no longer exists");
         // A OneDrive file that isn't on this PC can't be moved back reliably.
         if ((File.GetAttributes(source) & (FileAttributes)0x00400000) != 0) // FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS
@@ -186,17 +186,17 @@ public sealed class FileOrganizer(Func<IReadOnlyList<string>> roots, FileJournal
     private string CheckedFolder(string path, bool mustExist)
     {
         var folder = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar);
-        var isRoot = roots().Any(r => FileAccess.SamePath(r, folder));
+        var isRoot = roots().Any(r => FileScope.SamePath(r, folder));
         if (!isRoot)
         {
             var parent = Path.GetDirectoryName(folder);
             // A folder that doesn't exist yet is checked by its parent and name.
             var ok = Directory.Exists(folder)
-                ? FileAccess.Validated(folder, roots()) is not null
-                : parent is not null && (roots().Any(r => FileAccess.SamePath(r, parent)) || FileAccess.Validated(parent, roots()) is not null)
+                ? FileScope.Validated(folder, roots()) is not null
+                : parent is not null && (roots().Any(r => FileScope.SamePath(r, parent)) || FileScope.Validated(parent, roots()) is not null)
                   && !Path.GetFileName(folder).StartsWith('.');
             if (!ok) throw new ToolException($"{Path.GetFileName(folder)} is outside the folders I may change");
-            if (Directory.Exists(folder)) folder = FileAccess.Canonical(folder);
+            if (Directory.Exists(folder)) folder = FileScope.Canonical(folder);
         }
         var exists = Directory.Exists(folder);
         if (mustExist && !exists) throw new ToolException($"There's no folder called {Path.GetFileName(folder)}");
@@ -213,7 +213,7 @@ public sealed class FileOrganizer(Func<IReadOnlyList<string>> roots, FileJournal
         if (bin.Contains(path)) return true;
         var parent = Path.GetDirectoryName(path);
         if (parent is null) return false;
-        var parentAllowed = roots().Any(r => FileAccess.SamePath(r, parent)) || FileAccess.Validated(parent, roots()) is not null;
+        var parentAllowed = roots().Any(r => FileScope.SamePath(r, parent)) || FileScope.Validated(parent, roots()) is not null;
         var name = Path.GetFileName(path);
         return parentAllowed && !name.StartsWith('.') && !name.EndsWith(".app", StringComparison.OrdinalIgnoreCase);
     }
@@ -325,7 +325,7 @@ public sealed class FileServices(Func<IReadOnlyList<string>> roots, IFileSearch 
                 throw new ToolException("The file search took too long");
             }
         }
-        var valid = found.Select(f => FileAccess.Validated(f.Path, scoped) is { } path ? f with { Path = path } : null).OfType<FoundFile>()
+        var valid = found.Select(f => FileScope.Validated(f.Path, scoped) is { } path ? f with { Path = path } : null).OfType<FoundFile>()
             .DistinctBy(f => f.Path, StringComparer.OrdinalIgnoreCase);
         return FileRanking.Rank(valid, query).Take(limit).ToList();
     }
@@ -334,7 +334,7 @@ public sealed class FileServices(Func<IReadOnlyList<string>> roots, IFileSearch 
     public async Task<string> OpenAsync(FoundFile file, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var path = FileAccess.Validated(file.Path, Roots) ?? throw new ToolException("That file is outside the folders I may open");
+        var path = FileScope.Validated(file.Path, Roots) ?? throw new ToolException("That file is outside the folders I may open");
         await open(path);
         return $"Opened {file.Name}";
     }

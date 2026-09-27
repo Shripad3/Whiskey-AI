@@ -26,6 +26,7 @@ public sealed record FileRequestArguments(string Name, string? Kind = null, stri
 
     public static string Camel(string name) => char.ToLowerInvariant(name[0]) + name[1..];
 
+    [System.Text.Json.Serialization.JsonIgnore]
     public string Summary => FileQuery.FromText(Name, FileKinds.Parse(Kind), FilePeriods.Parse(Period), Folder).Summary;
 
     public static IReadOnlyList<ArgumentSpec> Specs { get; } =
@@ -131,14 +132,19 @@ public sealed class FindFilesTool(FileServices files) : AssistantTool<FileReques
     protected override FileRequestArguments? Direct(DirectCommand command)
     {
         var prefix = Prefixes.FirstOrDefault(p => command.Text.StartsWith(p + " ", StringComparison.Ordinal));
+        if (prefix is null) return null;
+        var rest = command.Text[(prefix.Length + 1)..];
+        // A question ("find out who won the race yesterday") is for the web.
+        if (rest.StartsWith("out ", StringComparison.Ordinal) || rest.Split(' ').Any(w => w is "who" or "why" or "how" or "whether" or "if")) return null;
         // Only when the rest itself sounds like files, so "show me the weather" isn't.
-        return prefix is not null && FileQuery.FromSpoken(command.Text[(prefix.Length + 1)..]) is { } query ? FileRequestArguments.From(query) : null;
+        return FileQuery.FromSpoken(rest) is { } query ? FileRequestArguments.From(query) : null;
     }
 }
 
 public sealed record OrganiseFilesArguments(string Operation, string Name, string? Kind = null, string? Period = null, string? Folder = null,
     string? NewName = null, string? Destination = null)
 {
+    [System.Text.Json.Serialization.JsonIgnore]
     public FileRequestArguments Files => new(Name, Kind, Period, Folder);
 }
 
@@ -229,7 +235,7 @@ public sealed class OrganiseFilesTool(FileServices files) : AssistantTool<Organi
                 // Several: let the user pick, with each one's folder shown, rather than guess.
                 var choices = (exact.Count > 0 ? exact : found).Take(6).ToList();
                 var rows = choices.Select(f => new ResultItem(files.ParkRename(organizer.PlanRename(f.Path, newName)), f.Name,
-                    FileAccess.Location(f.Path, files.Roots), "doc")).ToList();
+                    FileScope.Location(f.Path, files.Roots), "doc")).ToList();
                 return new ToolResult($"Which {choices[0].Name}? Click the one to rename") { Items = rows };
             }
             case FileOperation.Move or FileOperation.Copy:
