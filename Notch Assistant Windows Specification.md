@@ -201,6 +201,25 @@ Each phase is usable on its own. The friend tests every phase on the Omen.
 | **W4: the rest** | File organising with undo, YouTube Tier 2, Kokoro voice, installer signing | Rename then "undo that" restores; the installer runs on a clean Windows install |
 | Later | Gestures (camera + MediaPipe hand landmarks via ONNX), Microsoft Store | — |
 
+### Build status (Sep 27, 2026)
+
+**Built together:** W0–W3 and the file work of W4 were built in one pass, at the owner's request, so the friend gets the whole feature set at once. The phase "done when" checks above still apply, and all of them need the Omen.
+
+**Tested on the Mac:**
+- The shared core: 534 unit tests, most of them the Mac app's own tables.
+- The speech stack on real audio: 15 tests. The wake word fires on "Alfred" and not on three sentences the Mac found tricky.
+- The intent corpus through Qwen3-4B.
+
+**Compiled only:** the Windows app has been compiled but not yet run.
+
+**Not built yet:**
+- YouTube Tier 2, the Kokoro voice (§13 is still open) and installer signing.
+- Echo cancellation: the §3 audio row, which ducking only partly covers.
+
+**Differs from this spec:**
+- Notes go to Markdown files in `Documents\Alfred Notes`; OneNote isn't connected.
+- "Full screen" maximises the window.
+
 ## 11. Invariants (unchanged from the Mac spec, plus Windows specifics)
 
 - No `runCommand` tool; the model never reaches `cmd`, PowerShell, `wscript`, `rundll32` or any script host.

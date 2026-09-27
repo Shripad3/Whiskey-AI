@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Alfred (Windows)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/Alfred.Windows/bin/Debug/net10.0-windows10.0.26100.0/win-x64/Alfred.exe",
+      "cwd": "${workspaceFolder}/src/Alfred.Windows/bin/Debug/net10.0-windows10.0.26100.0/win-x64",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    }
+  ]
+}
