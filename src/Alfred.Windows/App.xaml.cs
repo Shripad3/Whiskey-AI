@@ -147,7 +147,11 @@ public partial class App : Application
 
         _wake.Update();
         UpdateTooltip();
+        // The first "open …" shouldn't wait for the Start menu scan.
+        _ = Task.Run(() => apps.Apps());
         FirstRun(background);
+        // The first "open …" shouldn't wait for the Start menu scan.
+        _ = Task.Run(() => apps.Apps());
         Log.Info("Alfred ready");
     }
 

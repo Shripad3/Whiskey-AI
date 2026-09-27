@@ -57,8 +57,11 @@ internal sealed class WindowsAppCatalog(SettingsStore settings) : IAppCatalog
         var shellType = Type.GetTypeFromProgID("Shell.Application") ?? throw new InvalidOperationException("No Shell.Application");
         dynamic shell = Activator.CreateInstance(shellType)!;
         dynamic folder = shell.NameSpace("shell:AppsFolder");
-        foreach (var item in folder.Items())
+        dynamic items = folder.Items();
+        int count = items.Count;
+        for (var i = 0; i < count; i++)
         {
+            dynamic item = items.Item(i);
             string name = item.Name;
             string parsingName = item.Path;
             if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(parsingName)) continue;
